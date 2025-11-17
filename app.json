@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Sofia",
+    "slug": "sofia",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Cette application a besoin d'accéder au microphone pour la reconnaissance vocale et l'apprentissage des langues.",
+        "NSUserNotificationsUsageDescription": "Cette application a besoin d'envoyer des notifications pour vous rappeler de vous entraîner et progresser dans votre apprentissage.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.blisscoach.sofia"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.blisscoach.sofia"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9889ba23-5cf6-4d22-b5b9-852e53aad58e"
+      }
+    },
+    "owner": "anthonyhdd26"
+  }
+}
