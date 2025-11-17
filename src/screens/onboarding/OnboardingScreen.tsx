@@ -751,7 +751,10 @@ export default function OnboardingScreen({ navigation, route }: any) {
               setCurrentSlideIndex((prev) => {
                 const nextIndex = (prev + 1) % currentQuestion.slides!.length;
                 const slideWidth = Dimensions.get('window').width;
-                slideshowScrollRef.current?.scrollTo({ x: nextIndex * slideWidth, animated: true });
+                slideshowScrollRef.current?.scrollTo({ 
+                  x: nextIndex * slideWidth, 
+                  animated: true 
+                });
                 return nextIndex;
               });
             }, 3000);
@@ -768,20 +771,29 @@ export default function OnboardingScreen({ navigation, route }: any) {
                 showsHorizontalScrollIndicator={false}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
+                decelerationRate="fast"
+                snapToInterval={Dimensions.get('window').width}
+                snapToAlignment="start"
                 style={styles.slideshowScrollView}
                 contentContainerStyle={styles.slideshowScrollContent}
               >
-                {currentQuestion.slides.map((slide, index) => (
-                  <View key={index} style={styles.slideshowSlideContainer}>
-                    <View style={styles.slideshowImageWrapper}>
-                      <Image
-                        source={slide}
-                        style={styles.slideshowImage}
-                        resizeMode="cover"
-                      />
+                {currentQuestion.slides.map((slide, index) => {
+                  const slideLabels = ['At the hotel', 'In vacation'];
+                  return (
+                    <View key={index} style={styles.slideshowSlideContainer}>
+                      <View style={styles.slideshowImageWrapper}>
+                        <Image
+                          source={slide}
+                          style={styles.slideshowImage}
+                          resizeMode="cover"
+                        />
+                        <Text style={styles.slideshowSlideLabel}>
+                          {slideLabels[index] || ''}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  );
+                })}
               </ScrollView>
             )}
             <View style={styles.slideshowTextContainer}>
@@ -792,13 +804,11 @@ export default function OnboardingScreen({ navigation, route }: any) {
                 <Text style={styles.slideshowSubtitle}>
                   {currentQuestion.subtitle || 'in more than'}{' '}
                 </Text>
-                {/* Gradient pour "1000" */}
                 <MaskedView
                   maskElement={
-                    <Text style={styles.slideshowHighlightMask}>
-                      1000{' '}
-                    </Text>
+                    <Text style={styles.slideshowHighlightMask}>1000</Text>
                   }
+                  style={styles.slideshowMaskedView}
                 >
                   <LinearGradient
                     colors={['#FF6B35', '#FF4500', '#FF0000']}
@@ -807,29 +817,13 @@ export default function OnboardingScreen({ navigation, route }: any) {
                     style={styles.slideshowHighlightGradient}
                   >
                     <Text style={[styles.slideshowHighlightMask, { opacity: 0 }]}>
-                      1000{' '}
+                      1000
                     </Text>
                   </LinearGradient>
                 </MaskedView>
-                {/* Gradient pour "situations!" */}
-                <MaskedView
-                  maskElement={
-                    <Text style={styles.slideshowHighlightMask}>
-                      {currentQuestion.highlightText || 'situations!'}
-                    </Text>
-                  }
-                >
-                  <LinearGradient
-                    colors={['#FF6B35', '#FF4500', '#FF0000']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.slideshowHighlightGradient}
-                  >
-                    <Text style={[styles.slideshowHighlightMask, { opacity: 0 }]}>
-                      {currentQuestion.highlightText || 'situations!'}
-                    </Text>
-                  </LinearGradient>
-                </MaskedView>
+                <Text style={styles.slideshowSubtitle}>
+                  {' '}{currentQuestion.highlightText || 'situations!'}
+                </Text>
               </View>
             </View>
           </View>
@@ -2482,23 +2476,39 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   slideshowScrollContent: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   slideshowSlideContainer: {
     width: Dimensions.get('window').width,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 0,
+    position: 'relative',
   },
   slideshowImageWrapper: {
-    width: '80%',
-    height: 280,
-    borderRadius: 30,
+    width: Dimensions.get('window').width - (spacing.lg * 2),
+    height: 380,
+    borderRadius: 50,
     overflow: 'hidden',
+    backgroundColor: 'transparent',
+    position: 'relative',
+    alignSelf: 'center',
+    marginHorizontal: spacing.lg,
   },
   slideshowImage: {
     width: '100%',
     height: '100%',
+    borderRadius: 50,
+  },
+  slideshowSlideLabel: {
+    position: 'absolute',
+    top: spacing.xl,
+    left: spacing.xl,
+    fontSize: typography.fontSize['3xl'],
+    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.bold,
+    color: colors.textWhite,
+    zIndex: 10,
   },
   slideshowTextContainer: {
     alignItems: 'center',
@@ -2535,8 +2545,15 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.medium,
     fontFamily: typography.fontFamily.medium,
   },
+  slideshowMaskedView: {
+    height: typography.fontSize.xl * 1.2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   slideshowHighlightGradient: {
-    paddingVertical: spacing.xs,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   slideshowHighlight: {
     fontSize: typography.fontSize.xl,

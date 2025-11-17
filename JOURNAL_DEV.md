@@ -4,6 +4,188 @@ This journal tracks all code changes, bug fixes, and feature additions to mainta
 
 ---
 
+## 2025-11-17 (Monday) - Build Submission: Auto-Submit Configuration and Submission Time
+
+**Action:** Configured auto-submit for future builds and explained submission process timing
+
+**Changes:**
+- Added `"autoSubmit": true` to production build profile in `eas.json`
+- This will automatically submit builds to TestFlight after they complete (no manual step needed)
+
+**Findings:**
+- Build #15 (iOS, production) completed successfully on 11/17/2025 at 7:58:48 PM
+- Submission process can take 10-30 minutes depending on:
+  - Upload speed of the .ipa file (can be 100-500MB)
+  - Apple's processing time (validation, code signing verification)
+  - Network conditions
+- After submission completes, build appears in TestFlight within 5-15 minutes
+- User can check status in App Store Connect or wait for email notification
+
+**Note:** For current submission in progress, user should wait for completion. Future builds will auto-submit.
+
+**Files Modified:**
+- `eas.json`
+
+---
+
+## 2025-11-17 (Monday) - Build Submission: Build Ready but Not Submitted to TestFlight
+
+**Action:** Identified that build #15 is finished but not yet submitted to TestFlight
+
+**Findings:**
+- Build #15 (iOS, production) completed successfully on 11/17/2025 at 7:58:48 PM
+- Build status: "finished" with distribution "store"
+- Build has not been submitted to TestFlight yet (requires manual submission)
+
+**Solution:**
+- User needs to run `eas submit --platform ios --latest --profile production` manually
+- This command requires interactive Apple Developer account authentication
+- After submission, the build will appear in TestFlight within a few minutes
+
+**Files Modified:**
+- None (informational only)
+
+---
+
+## 2025-11-17 (Monday) - Build Configuration: Fixed Slug Mismatch for EAS Build
+
+**Action:** Fixed slug configuration issue to enable EAS builds
+
+**Changes:**
+- Changed slug in `app.json` from "sofia" to "SPANISH" to match the EAS projectId configuration
+- This resolves the "Slug for project identified by extra.eas.projectId does not match the slug field" error
+- Build process now progresses further but requires interactive authentication for Apple credentials
+
+**Status:**
+- EAS Build service is experiencing partial outage (builds not marked as completed)
+- iOS build requires interactive Apple account login (cannot be automated)
+- Android build requires Keystore generation (cannot be done in non-interactive mode)
+- User needs to run `eas build` manually to complete authentication
+
+**Files Modified:**
+- `app.json`
+
+---
+
+## 2025-11-17 (Monday) - OnboardingScreen: Fixed Slideshow Image Cutting and Full Width Issue
+
+**Action:** Fixed slideshow images getting cut and not taking full width when scrolling
+
+**Changes:**
+- Changed `snapToAlignment` from "center" to "start" in ScrollView for better pagination alignment
+- Changed `alignItems` in `slideshowScrollContent` from "center" to "flex-start" to prevent alignment issues
+- Removed `paddingHorizontal` from `slideshowSlideContainer` to ensure full width slides
+- Moved spacing to `marginHorizontal` on `slideshowImageWrapper` instead of padding on container
+- Added `alignSelf: 'center'` to `slideshowImageWrapper` to center images within slides
+- This ensures each slide takes the full screen width and images are properly centered without being cut
+
+**Files Modified:**
+- `src/screens/onboarding/OnboardingScreen.tsx`
+
+---
+
+## 2025-11-17 (Monday) - OnboardingScreen: Fixed Text Alignment and Increased Image Height
+
+**Action:** Fixed "1000" text alignment issue and increased slideshow image height
+
+**Changes:**
+- Increased slideshow image height from 280px to 380px for better visibility
+- Changed `flexWrap` from `'wrap'` to `'nowrap'` in `slideshowSubtitleContainer` to keep text on same line
+- Set fixed height for `slideshowMaskedView` (typography.fontSize.xl * 1.2) to ensure proper vertical alignment
+- Added `justifyContent: 'center'` and `alignItems: 'center'` to `slideshowMaskedView` for proper centering
+- Updated `slideshowHighlightGradient` to use `height: '100%'` instead of `paddingVertical` for better alignment
+- Increased slide label font size from `2xl` (24px) to `3xl` (28px) for better visibility
+- Increased slide label padding from `spacing.md` to `spacing.xl` for top and left positioning
+
+**Files Modified:**
+- `src/screens/onboarding/OnboardingScreen.tsx`
+
+---
+
+## 2025-11-17 (Monday) - OnboardingScreen: Improved Slideshow Labels and Gradient Text
+
+**Action:** Enhanced slide labels positioning, border radius, and gradient text for "1000"
+
+**Changes:**
+- Moved slide labels ("At the hotel", "In vacation") inside image wrapper to display only on images
+- Positioned labels absolutely within `slideshowImageWrapper` instead of outside
+- Increased label font size from `lg` (18px) to `2xl` (24px) for better visibility
+- Changed image border radius from `borderRadius.xl` (20px) to 50px for more rounded corners
+- Changed image `resizeMode` from "contain" to "cover" for better image display
+- Added gradient (orange-red) to "1000" text using MaskedView and LinearGradient
+- Restored `slideshowSubtitleContainer` with flexDirection: 'row' and flexWrap: 'wrap' for proper text layout
+- Added `position: 'relative'` to `slideshowImageWrapper` for proper absolute positioning of labels
+
+**Files Modified:**
+- `src/screens/onboarding/OnboardingScreen.tsx`
+
+---
+
+## 2025-11-17 (Monday) - OnboardingScreen: Added Slide Labels and Simplified Subtitle Text
+
+**Action:** Added labels to slideshow images and simplified subtitle text structure
+
+**Changes:**
+- Added slide labels in top-left corner of each slide:
+  - Slide 1: "At the hotel"
+  - Slide 2: "In vacation"
+- Styled labels with Hubot-Sans font, bold weight, white color
+- Positioned labels absolutely at top-left (top: spacing.md, left: spacing.lg)
+- Simplified subtitle text structure by removing complex MaskedView and LinearGradient components
+- Replaced gradient text with simple Text component using `slideshowHighlightText` style for "1000"
+- Kept same font size (xl) and weight (medium for text, bold for "1000")
+- Added border radius to slide images using `borderRadius.xl` (20px) on both wrapper and image
+- Removed unused styles: `slideshowSubtitleContainer`, `slideshowHighlightMask`, `slideshowMaskedView`, `slideshowHighlightGradient`
+
+**Files Modified:**
+- `src/screens/onboarding/OnboardingScreen.tsx`
+
+---
+
+## 2025-11-17 (Monday) - OnboardingScreen: Fixed Slideshow Image Cutting and Text Alignment
+
+**Action:** Fixed slideshow pagination issues and text layout problems
+
+**Changes:**
+- Fixed slideshow image cutting issue by:
+  - Changed `resizeMode` from "cover" to "contain" to prevent image cropping
+  - Set exact width for `slideshowImageWrapper` using `Dimensions.get('window').width - (spacing.lg * 2)` instead of percentage
+  - Added `decelerationRate="fast"` for smoother scrolling
+  - Added `snapToInterval` and `snapToAlignment` props for better pagination
+  - Removed `flex: 1` from `slideshowSlideContainer` that was causing layout issues
+- Fixed text alignment issue for "in more than 1000 situations":
+  - Added `width: '100%'` to `slideshowSubtitleContainer` to ensure proper row layout
+  - Added `slideshowMaskedView` style with `height: 'auto'` for proper MaskedView sizing
+  - Added explicit space Text component between gradient elements for consistent spacing
+  - Removed trailing spaces from gradient mask text to prevent layout issues
+
+**Files Modified:**
+- `src/screens/onboarding/OnboardingScreen.tsx`
+
+**Issues Fixed:**
+1. Images were getting cut during scroll due to incorrect width calculations and resizeMode
+2. Text "in more than 1000 situations" was not staying on same line due to MaskedView layout issues
+
+---
+
+## 2025-11-17 (Monday) - HomeScreen: Updated Paywall Button with Orange-Red Gradient
+
+**Action:** Enhanced "Access Sofia" button styling with gradient and border radius
+
+**Changes:**
+- Replaced solid background color with LinearGradient component
+- Applied orange-to-red gradient colors: `['#FF6B35', '#FF4500', '#FF0000']`
+- Set gradient direction from left to right (start: { x: 0, y: 0 }, end: { x: 1, y: 0 })
+- Added border radius using `borderRadius.xl` (20px) for rounded corners
+- Created `paywallButtonContainer` wrapper with `overflow: 'hidden'` to clip gradient to border radius
+- Maintained button padding, text styling, and functionality
+- Imported `LinearGradient` from expo-linear-gradient
+
+**Files Modified:**
+- `src/screens/home/HomeScreen.tsx`
+
+---
+
 ## 2025-11-17 (Monday) - HomeScreen UI: Added Burger Menu and Onboarding Button
 
 **Action:** Enhanced HomeScreen with navigation menu and onboarding access

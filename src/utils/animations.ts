@@ -52,3 +52,6 @@ export const pulse = (value: Animated.Value, min: number = 1, max: number = 1.2)
 
 
 
+
+
+
