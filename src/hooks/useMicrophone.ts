@@ -76,6 +76,79 @@ export function useMicrophone(): UseMicrophoneReturn {
     }
   }, []);
 
+  // Helper function to safely stop and unload a recording
+  const safelyStopAndUnloadRecording = useCallback(async (
+    recording: Audio.Recording
+  ): Promise<string | null> => {
+    try {
+      // Get URI before unloading (once unloaded, getURI() returns null)
+      const uri = recording.getURI();
+      
+      // Try to stop and unload
+      try {
+        await recording.stopAndUnloadAsync();
+        console.log('✅ Recording stopped and unloaded successfully');
+      } catch (stopError: any) {
+        // Check if error is because recording is already unloaded
+        const errorMessage = stopError?.message || String(stopError);
+        if (errorMessage.includes('already been unloaded') || 
+            errorMessage.includes('unloaded') ||
+            errorMessage.includes('not loaded')) {
+          console.log('⚠️ Recording already unloaded, skipping stopAndUnloadAsync');
+        } else {
+          // Re-throw if it's a different error
+          throw stopError;
+        }
+      }
+      
+      return uri;
+    } catch (err) {
+      console.error('❌ Error in safelyStopAndUnloadRecording:', err);
+      return null;
+    }
+  }, []);
+
+  // Fonction pour créer un nouvel enregistrement de manière sécurisée
+  const createRecordingSafely = useCallback(async (): Promise<Audio.Recording | null> => {
+    // Vérifier le verrou
+    if (isCreatingRecordingRef.current) {
+      console.log('⚠️ Already creating a recording, skipping...');
+      return null;
+    }
+
+    // Vérifier qu'il n'y a pas d'enregistrement en cours
+    if (recordingRef.current) {
+      console.log('⚠️ Recording already exists, cleaning up first...');
+      const uri = await safelyStopAndUnloadRecording(recordingRef.current);
+      if (uri) {
+        try {
+          await FileSystem.deleteAsync(uri, { idempotent: true });
+        } catch (e) {
+          // Ignorer les erreurs de suppression
+        }
+      }
+      recordingRef.current = null;
+    }
+
+    // Activer le verrou
+    isCreatingRecordingRef.current = true;
+
+    try {
+      console.log('🎙️ Creating new recording...');
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      console.log('✅ Recording created successfully');
+      return recording;
+    } catch (err) {
+      console.error('❌ Error creating recording:', err);
+      return null;
+    } finally {
+      // Désactiver le verrou
+      isCreatingRecordingRef.current = false;
+    }
+  }, [safelyStopAndUnloadRecording]);
+
   const transcribeAudio = useCallback(async (audioUri: string): Promise<string> => {
     try {
       console.log('🌐 Starting transcription with API...');
@@ -98,7 +171,9 @@ export function useMicrophone(): UseMicrophoneReturn {
         name: 'recording.m4a',
       } as any);
       formData.append('model', 'whisper-1');
-      formData.append('language', 'en'); // ou 'fr' pour le français
+      // Ne pas spécifier la langue pour laisser Whisper détecter automatiquement
+      // Cela permet de comprendre l'espagnol avec différents accents
+      // formData.append('language', 'es'); // Optionnel : forcer l'espagnol si nécessaire
 
       console.log('📡 Sending request to OpenAI API...');
       const response = await fetch(TRANSCRIPTION_API_URL, {
@@ -268,78 +343,6 @@ export function useMicrophone(): UseMicrophoneReturn {
     }
   }, []);
 
-  // Helper function to safely stop and unload a recording
-  const safelyStopAndUnloadRecording = useCallback(async (
-    recording: Audio.Recording
-  ): Promise<string | null> => {
-    try {
-      // Get URI before unloading (once unloaded, getURI() returns null)
-      const uri = recording.getURI();
-      
-      // Try to stop and unload
-      try {
-        await recording.stopAndUnloadAsync();
-        console.log('✅ Recording stopped and unloaded successfully');
-      } catch (stopError: any) {
-        // Check if error is because recording is already unloaded
-        const errorMessage = stopError?.message || String(stopError);
-        if (errorMessage.includes('already been unloaded') || 
-            errorMessage.includes('unloaded') ||
-            errorMessage.includes('not loaded')) {
-          console.log('⚠️ Recording already unloaded, skipping stopAndUnloadAsync');
-        } else {
-          // Re-throw if it's a different error
-          throw stopError;
-        }
-      }
-      
-      return uri;
-    } catch (err) {
-      console.error('❌ Error in safelyStopAndUnloadRecording:', err);
-      return null;
-    }
-  }, []);
-
-  // Fonction pour créer un nouvel enregistrement de manière sécurisée
-  const createRecordingSafely = useCallback(async (): Promise<Audio.Recording | null> => {
-    // Vérifier le verrou
-    if (isCreatingRecordingRef.current) {
-      console.log('⚠️ Already creating a recording, skipping...');
-      return null;
-    }
-
-    // Vérifier qu'il n'y a pas d'enregistrement en cours
-    if (recordingRef.current) {
-      console.log('⚠️ Recording already exists, cleaning up first...');
-      const uri = await safelyStopAndUnloadRecording(recordingRef.current);
-      if (uri) {
-        try {
-          await FileSystem.deleteAsync(uri, { idempotent: true });
-        } catch (e) {
-          // Ignorer les erreurs de suppression
-        }
-      }
-      recordingRef.current = null;
-    }
-
-    // Activer le verrou
-    isCreatingRecordingRef.current = true;
-
-    try {
-      console.log('🎙️ Creating new recording...');
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      console.log('✅ Recording created successfully');
-      return recording;
-    } catch (err) {
-      console.error('❌ Error creating recording:', err);
-      return null;
-    } finally {
-      // Désactiver le verrou
-      isCreatingRecordingRef.current = false;
-    }
-  }, []);
 
   // Fonction pour valider périodiquement pendant l'enregistrement
   const validatePeriodically = useCallback(async () => {

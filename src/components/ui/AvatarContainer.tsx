@@ -59,10 +59,10 @@ const styles = StyleSheet.create({
     width: '80%',
     height: '80%',
     borderRadius: 200,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: 'transparent', // Transparent au lieu de violet
     alignItems: 'center',
     justifyContent: 'center',
-    opacity: 0.3,
+    opacity: 0,
   },
   face: {
     width: '60%',

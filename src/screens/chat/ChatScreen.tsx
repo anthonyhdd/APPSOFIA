@@ -18,6 +18,8 @@ import { useMicrophone } from '../../hooks/useMicrophone';
 import { ChatMessage } from '../../types';
 import { triggerHapticFeedback } from '../../utils/haptics';
 import { useLanguage } from '../../context/LanguageContext';
+import { generateAIResponse, ChatMessage as AIChatMessage } from '../../utils/aiChat';
+import { speakSpanish, stopSpeaking } from '../../utils/textToSpeech';
 
 export default function ChatScreen({ navigation }: any) {
   const { t } = useLanguage();
@@ -44,10 +46,31 @@ export default function ChatScreen({ navigation }: any) {
   const [userTranscription, setUserTranscription] = useState<string>('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
+  const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const lastSentMessageRef = React.useRef<string>('');
   const greetingTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const holaPlayedRef = React.useRef<boolean>(false);
   const holaStartTimeRef = React.useRef<number | null>(null);
+
+  // Vérifier la configuration de l'API au démarrage
+  React.useEffect(() => {
+    const checkApiKey = () => {
+      const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
+      if (!apiKey || apiKey.trim() === '') {
+        setApiError('Clé API OpenAI non configurée. Vérifiez votre fichier .env et redémarrez le serveur.');
+        console.error('❌ OPENAI_API_KEY is not configured');
+        console.error('❌ Please check:');
+        console.error('   1. Create a .env file in the project root');
+        console.error('   2. Add: EXPO_PUBLIC_OPENAI_API_KEY=your_api_key_here');
+        console.error('   3. Restart the Expo server (npm start)');
+      } else {
+        setApiError(null);
+        console.log('✅ OPENAI_API_KEY is configured (length:', apiKey.length, ')');
+      }
+    };
+    checkApiKey();
+  }, []);
 
   // Charger les deux vidéos
   useEffect(() => {
@@ -111,41 +134,35 @@ export default function ChatScreen({ navigation }: any) {
     }
   }, [currentVideo, standingVideoReady]);
 
-  // Fonction pour générer une réponse pertinente en espagnol (très courte)
-  const generateAIResponse = React.useCallback((userMessage: string): string => {
-    const message = userMessage.toLowerCase().trim();
-    
-    // Réponses très courtes en espagnol basées sur la question
-    if (message.includes('destino') || message.includes('viaje') || message.includes('viajar')) {
-      return '¡Genial! ¿Adónde más?';
+  // Fonction pour générer une réponse de l'IA en espagnol
+  const getAIResponse = React.useCallback(async (userMessage: string): Promise<string> => {
+    try {
+      setIsGeneratingResponse(true);
+      
+      // Construire l'historique de conversation en alternant user/assistant
+      const conversationHistory: AIChatMessage[] = [];
+      
+      // Parcourir les messages dans l'ordre et construire l'historique
+      for (const msg of messages.slice(-10)) { // Garder seulement les 10 derniers messages
+        conversationHistory.push({
+          role: msg.isUser ? 'user' : 'assistant',
+          content: msg.text,
+        });
+      }
+      
+      // Appeler l'API OpenAI
+      const aiResponse = await generateAIResponse(userMessage, conversationHistory);
+      return aiResponse;
+    } catch (error) {
+      console.error('❌ Error getting AI response:', error);
+      // Retourner une réponse de fallback
+      return '¿Qué más quieres decir?';
+    } finally {
+      setIsGeneratingResponse(false);
     }
-    if (message.includes('comida') || message.includes('comer') || message.includes('restaurante')) {
-      return '¡Rico! ¿Qué más?';
-    }
-    if (message.includes('familia') || message.includes('padres') || message.includes('hermanos')) {
-      return '¡Qué bien! ¿Y qué más?';
-    }
-    if (message.includes('trabajo') || message.includes('trabajar') || message.includes('oficina')) {
-      return 'Interesante. ¿Más?';
-    }
-    if (message.includes('hobby') || message.includes('pasatiempo') || message.includes('gusta hacer')) {
-      return '¡Genial! ¿Qué más?';
-    }
-    if (message.includes('música') || message.includes('cantar') || message.includes('escuchar')) {
-      return '¡Me encanta! ¿Más?';
-    }
-    if (message.includes('película') || message.includes('pelicula') || message.includes('cine')) {
-      return '¡Genial! ¿Qué más?';
-    }
-    if (message.includes('libro') || message.includes('leer') || message.includes('lectura')) {
-      return '¡Bien! ¿Más?';
-    }
-    
-    // Réponse par défaut très courte
-    return '¿Qué más?';
-  }, []);
+  }, [messages]);
 
-  const handleSend = React.useCallback((textToSend?: string) => {
+  const handleSend = React.useCallback(async (textToSend?: string) => {
     const text = textToSend || inputText || transcript;
     if (text && typeof text === 'string' && text.trim()) {
       // Éviter le double envoi
@@ -156,24 +173,62 @@ export default function ChatScreen({ navigation }: any) {
       
       lastSentMessageRef.current = text.trim();
       
-      // Afficher la transcription de l'utilisateur en haut à la place de "Hola, ¿cómo estás?"
+      // Afficher la transcription de l'utilisateur en haut
       setUserTranscription(text.trim());
       setShowGreeting(false); // Cacher le texte "Hola, ¿cómo estás?"
       setShowGreetingPart2(false);
       
-      // Ne pas ajouter le message utilisateur aux messages (ne pas l'afficher dans les bulles)
+      // Ajouter le message utilisateur à l'historique
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        text: text.trim(),
+        isUser: true,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, userMessage]);
       setInputText('');
       
-      // Générer une réponse pertinente en espagnol (très courte) et l'afficher à la place de "Hola"
-      setTimeout(() => {
-        const aiResponseText = generateAIResponse(text.trim());
-        // Afficher la réponse de l'IA à la place de "Hola, ¿cómo estás?"
-        if (aiResponseText && typeof aiResponseText === 'string') {
-          setUserTranscription(aiResponseText);
+      // Générer une réponse de l'IA en espagnol
+      try {
+        const aiResponseText = await getAIResponse(text.trim());
+        
+        // Si la réponse contient une erreur de configuration, l'afficher
+        if (aiResponseText.includes('non configurée') || aiResponseText.includes('not configured')) {
+          setApiError(aiResponseText);
+        } else {
+          setApiError(null);
         }
-      }, 1000);
+        
+        // Ajouter la réponse de l'IA à l'historique
+        const aiMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          text: aiResponseText,
+          isUser: false,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, aiMessage]);
+        
+        // Afficher la réponse de l'IA en haut
+        setUserTranscription(aiResponseText);
+        
+        // Faire parler Sofia à voix haute en espagnol
+        await speakSpanish(aiResponseText, true);
+      } catch (error: any) {
+        console.error('❌ Error in handleSend:', error);
+        const errorMessage = error?.message || 'Lo siento, hubo un error. ¿Puedes repetir?';
+        
+        // Si c'est une erreur de configuration API, l'afficher clairement
+        if (errorMessage.includes('non configurée') || errorMessage.includes('not configured')) {
+          setApiError(errorMessage);
+        }
+        
+        // Afficher un message d'erreur
+        setUserTranscription(errorMessage);
+        // Parler le message d'erreur aussi
+        await speakSpanish(errorMessage, false);
+      }
     }
-  }, [inputText, transcript, generateAIResponse]);
+  }, [inputText, transcript, getAIResponse]);
 
   // Fonction de validation pour l'arrêt automatique (envoie automatiquement le message)
   const validateAndSend = React.useCallback(async (transcribedText: string | undefined | null): Promise<boolean> => {
@@ -188,13 +243,15 @@ export default function ChatScreen({ navigation }: any) {
     return false; // Continuer si pas de texte
   }, [handleSend]);
 
-  // Arrêter le micro quand on quitte l'écran
+  // Arrêter le micro et la synthèse vocale quand on quitte l'écran
   React.useEffect(() => {
     return () => {
       if (listening) {
         console.log('🛑 ChatScreen unmounting: stopping microphone');
         stopListening().catch(err => console.error('Error stopping mic on unmount:', err));
       }
+      // Arrêter toute synthèse vocale en cours
+      stopSpeaking();
       // Nettoyer le timer de salutation
       if (greetingTimerRef.current) {
         clearTimeout(greetingTimerRef.current);
@@ -273,8 +330,8 @@ export default function ChatScreen({ navigation }: any) {
               isLooping={false}
               resizeMode={ResizeMode.COVER}
               useNativeControls={false}
-              isMuted={false}
-              volume={1.0}
+              isMuted={true}
+              volume={0}
               progressUpdateIntervalMillis={100}
               onLoadStart={() => {
                 console.log('🎬 Hola video load started');
@@ -293,8 +350,9 @@ export default function ChatScreen({ navigation }: any) {
               onLoad={(status) => {
                 console.log('✅ Hola video loaded:', status);
                 setHolaVideoReady(true);
-                videoRef.current?.setIsMutedAsync(false);
-                videoRef.current?.setVolumeAsync(1.0);
+                // Garder la vidéo en muet pour éviter le doublon avec ElevenLabs
+                videoRef.current?.setIsMutedAsync(true);
+                videoRef.current?.setVolumeAsync(0);
                 videoRef.current?.playAsync();
               }}
               onError={(error) => {
@@ -315,6 +373,10 @@ export default function ChatScreen({ navigation }: any) {
                       setTimeout(() => {
                         setShowGreetingPart2(true);
                         console.log('✅ "¿cómo estás?" displayed');
+                        // Faire parler Sofia : "Hola, ¿cómo estás?"
+                        speakSpanish('Hola, ¿cómo estás?', true).catch(err => {
+                          console.error('❌ Error speaking greeting:', err);
+                        });
                       }, 2000);
                     }, 1000);
                   }
@@ -336,9 +398,10 @@ export default function ChatScreen({ navigation }: any) {
                   if (!status.isPlaying && !status.isBuffering && holaVideoReady && !status.didJustFinish) {
                     videoRef.current?.playAsync();
                   }
-                  if (status.isMuted) {
-                    videoRef.current?.setIsMutedAsync(false);
-                    videoRef.current?.setVolumeAsync(1.0);
+                  // Garder la vidéo en muet pour éviter le doublon avec ElevenLabs
+                  if (!status.isMuted) {
+                    videoRef.current?.setIsMutedAsync(true);
+                    videoRef.current?.setVolumeAsync(0);
                   }
                 }
               }}
@@ -424,6 +487,16 @@ export default function ChatScreen({ navigation }: any) {
             <Text style={styles.minimizeIcon}>⤓</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Message d'erreur API si la clé n'est pas configurée */}
+        {apiError && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>⚠️ {apiError}</Text>
+            <Text style={styles.errorSubtext}>
+              Vérifiez votre fichier .env et redémarrez le serveur Expo
+            </Text>
+          </View>
+        )}
 
         {/* Texte de l'utilisateur ou salutation en haut */}
         {(showGreeting || userTranscription) && (
@@ -627,6 +700,28 @@ const styles = StyleSheet.create({
   microphoneButtonContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  errorContainer: {
+    backgroundColor: 'rgba(255, 107, 53, 0.9)',
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#FF6B35',
+  },
+  errorText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textWhite,
+    fontFamily: typography.fontFamily.bold,
+    marginBottom: spacing.xs,
+  },
+  errorSubtext: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textWhite,
+    fontFamily: typography.fontFamily.regular,
+    opacity: 0.9,
   },
 });
 
