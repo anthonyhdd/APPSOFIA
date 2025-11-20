@@ -59,10 +59,9 @@ const styles = StyleSheet.create({
     width: '80%',
     height: '80%',
     borderRadius: 200,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
-    opacity: 0.3,
   },
   face: {
     width: '60%',
@@ -74,8 +73,8 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: colors.text,
-    margin: 10,
+    backgroundColor: colors.primary,
+    marginBottom: 10,
   },
   mouth: {
     width: 40,
@@ -83,15 +82,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
     borderWidth: 3,
-    borderColor: colors.text,
+    borderColor: colors.primary,
     borderTopWidth: 0,
-    marginTop: 10,
   },
 });
-
-
-
-
-
-
-

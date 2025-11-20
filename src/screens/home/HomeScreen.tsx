@@ -25,6 +25,7 @@ export default function HomeScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [userName, setUserName] = useState<string>('');
   const videoRef = useRef<Video>(null);
+  const [showStreakNotification, setShowStreakNotification] = useState(true);
 
   useEffect(() => {
     const loadUserName = async () => {
@@ -62,7 +63,7 @@ export default function HomeScreen({ navigation }: any) {
 
   const handleBurgerMenuPress = () => {
     triggerHapticFeedback();
-    // TODO: Open menu/settings
+    navigation.navigate('Settings');
   };
 
   const handleOnboardingPress = () => {
@@ -82,6 +83,34 @@ export default function HomeScreen({ navigation }: any) {
         isLooping
         isMuted
       />
+
+      {/* Daily Streak Notification - Glass Design */}
+      {showStreakNotification && user.streak > 0 && (
+        <View style={[styles.streakNotificationContainer, { paddingTop: insets.top + spacing.md }]}>
+          <View style={styles.streakNotificationGlass}>
+            <View style={styles.streakNotificationContent}>
+              <View style={styles.streakNotificationHeader}>
+                <Text style={styles.streakNotificationIcon}>🔥</Text>
+                <Text style={styles.streakNotificationTitle}>
+                  {t('home.streak.title') || 'Daily Streak!'}
+                </Text>
+                <TouchableOpacity
+                  style={styles.streakNotificationClose}
+                  onPress={() => {
+                    triggerHapticFeedback();
+                    setShowStreakNotification(false);
+                  }}
+                >
+                  <Text style={styles.streakNotificationCloseIcon}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.streakNotificationText}>
+                {t('home.streak.message') || `You're on a ${user.streak} day streak! Keep it up!`}
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* Top Bar with Stats */}
       <View style={styles.topBar}>
@@ -253,5 +282,68 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+  },
+  streakNotificationContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  streakNotificationGlass: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    overflow: 'hidden',
+    // Glass effect with shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  streakNotificationContent: {
+    padding: spacing.md,
+    // Backdrop blur effect simulation with gradient overlay
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  streakNotificationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  streakNotificationIcon: {
+    fontSize: 24,
+    marginRight: spacing.sm,
+  },
+  streakNotificationTitle: {
+    flex: 1,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textWhite,
+    fontFamily: typography.fontFamily.bold,
+  },
+  streakNotificationClose: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streakNotificationCloseIcon: {
+    fontSize: 14,
+    color: colors.textWhite,
+    fontWeight: '600',
+  },
+  streakNotificationText: {
+    fontSize: typography.fontSize.base,
+    color: colors.textWhite,
+    opacity: 0.9,
+    fontFamily: typography.fontFamily.regular,
+    lineHeight: typography.fontSize.base * 1.4,
   },
 });

@@ -7,5 +7,5 @@ export type RootStackParamList = {
   CallEnd: undefined;
   Quests: undefined;
   Paywall: { fromOnboarding?: boolean } | undefined;
+  Settings: undefined;
 };
-

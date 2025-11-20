@@ -49,15 +49,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   text: {
-    fontSize: typography.fontSize.base,
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.base,
+    ...typography.body,
     color: colors.text,
+    fontFamily: typography.fontFamily.regular,
   },
 });
-
-
-
-
-
-
-

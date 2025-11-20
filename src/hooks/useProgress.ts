@@ -58,10 +58,3 @@ export function useProgress(): UseProgressReturn {
     resetProgress,
   };
 }
-
-
-
-
-
-
-

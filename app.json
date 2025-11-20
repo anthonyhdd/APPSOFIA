@@ -14,12 +14,21 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.blisscoach.sofia",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Cette application a besoin d'accéder au microphone pour la reconnaissance vocale et l'apprentissage des langues.",
-        "NSUserNotificationsUsageDescription": "Cette application a besoin d'envoyer des notifications pour vous rappeler de vous entraîner et progresser dans votre apprentissage.",
-        "ITSAppUsesNonExemptEncryption": false
+        "NSMicrophoneUsageDescription": "Sofia utilise le microphone pour la reconnaissance vocale et l'évaluation de votre prononciation en espagnol. Vos enregistrements audio sont traités localement et via des services de transcription pour améliorer votre apprentissage.",
+        "NSUserNotificationsUsageDescription": "Sofia envoie des notifications pour vous rappeler de pratiquer quotidiennement et maintenir votre série de jours consécutifs. Vous pouvez désactiver ces notifications dans les paramètres de l'application.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Sofia peut utiliser la caméra pour des fonctionnalités futures d'apprentissage interactif. Cette permission n'est actuellement pas utilisée.",
+        "NSPhotoLibraryUsageDescription": "Sofia peut accéder à votre bibliothèque photo pour des fonctionnalités futures d'apprentissage interactif. Cette permission n'est actuellement pas utilisée."
       },
-      "bundleIdentifier": "com.blisscoach.sofia"
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": []
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -31,7 +40,8 @@
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.blisscoach.sofia"
+      "package": "com.blisscoach.sofia",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,8 +49,20 @@
     "extra": {
       "eas": {
         "projectId": "9889ba23-5cf6-4d22-b5b9-852e53aad58e"
-    }
+      }
     },
-    "owner": "anthonyhdd26"
+    "owner": "anthonyhdd26",
+    "privacy": "public",
+    "description": "Sofia est une application d'apprentissage de l'espagnol qui utilise l'intelligence artificielle pour vous aider à améliorer votre prononciation et votre compréhension. Pratiquez avec des conversations interactives et suivez votre progression.",
+    "keywords": [
+      "espagnol",
+      "langue",
+      "apprentissage",
+      "prononciation",
+      "conversation",
+      "IA",
+      "éducation"
+    ],
+    "primaryColor": "#FF6B35"
   }
 }

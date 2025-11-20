@@ -15,6 +15,7 @@ import ChatScreen from '../screens/chat/ChatScreen';
 import CallEndScreen from '../screens/call/CallEndScreen';
 import QuestsScreen from '../screens/quests/QuestsScreen';
 import PaywallScreen from '../screens/paywall/PaywallScreen';
+import SettingsScreen from '../../screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -62,6 +63,7 @@ export default function AppNavigator() {
         <Stack.Screen name="CallEnd" component={CallEndScreen} />
         <Stack.Screen name="Quests" component={QuestsScreen} />
         <Stack.Screen name="Paywall" component={PaywallScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -75,4 +77,3 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 });
-

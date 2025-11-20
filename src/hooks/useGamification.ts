@@ -36,10 +36,3 @@ export function useGamification(): UseGamificationReturn {
     checkAchievements,
   };
 }
-
-
-
-
-
-
-

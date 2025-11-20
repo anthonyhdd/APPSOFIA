@@ -2215,6 +2215,7 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     ...shadows.lg,
     marginTop: spacing.xl,
+
   },
   notificationTitle: {
     fontSize: typography.fontSize.lg,
@@ -2562,3 +2563,4 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bold,
   },
 });
+

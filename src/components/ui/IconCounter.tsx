@@ -75,4 +75,3 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bold,
   },
 });
-

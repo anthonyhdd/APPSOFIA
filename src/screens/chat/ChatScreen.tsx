@@ -203,15 +203,6 @@ export default function ChatScreen({ navigation }: any) {
     };
   }, [listening, stopListening]);
 
-  // Observer les changements de transcript pour détecter l'arrêt automatique
-  // Note: On ne l'utilise plus car validateAndSend gère déjà l'envoi automatique
-  // React.useEffect(() => {
-  //   if (transcript && !listening && transcript.trim().length > 0) {
-  //     // Le micro s'est arrêté automatiquement avec une transcription
-  //     handleSend(transcript);
-  //   }
-  // }, [transcript, listening, handleSend]);
-
   const handleMicrophonePress = async () => {
     console.log('🎤 ChatScreen handleMicrophonePress called, listening:', listening);
     
@@ -629,4 +620,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-

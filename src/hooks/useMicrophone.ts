@@ -127,6 +127,79 @@ export function useMicrophone(): UseMicrophoneReturn {
     }
   }, []);
 
+  // Helper function to safely stop and unload a recording
+  const safelyStopAndUnloadRecording = useCallback(async (
+    recording: Audio.Recording
+  ): Promise<string | null> => {
+    try {
+      // Get URI before unloading (once unloaded, getURI() returns null)
+      const uri = recording.getURI();
+      
+      // Try to stop and unload
+      try {
+        await recording.stopAndUnloadAsync();
+        console.log('✅ Recording stopped and unloaded successfully');
+      } catch (stopError: any) {
+        // Check if error is because recording is already unloaded
+        const errorMessage = stopError?.message || String(stopError);
+        if (errorMessage.includes('already been unloaded') || 
+            errorMessage.includes('unloaded') ||
+            errorMessage.includes('not loaded')) {
+          console.log('⚠️ Recording already unloaded, skipping stopAndUnloadAsync');
+        } else {
+          // Re-throw if it's a different error
+          throw stopError;
+        }
+      }
+      
+      return uri;
+    } catch (err) {
+      console.error('❌ Error in safelyStopAndUnloadRecording:', err);
+      return null;
+    }
+  }, []);
+
+  // Fonction pour créer un nouvel enregistrement de manière sécurisée
+  const createRecordingSafely = useCallback(async (): Promise<Audio.Recording | null> => {
+    // Vérifier le verrou
+    if (isCreatingRecordingRef.current) {
+      console.log('⚠️ Already creating a recording, skipping...');
+      return null;
+    }
+
+    // Vérifier qu'il n'y a pas d'enregistrement en cours
+    if (recordingRef.current) {
+      console.log('⚠️ Recording already exists, cleaning up first...');
+      const uri = await safelyStopAndUnloadRecording(recordingRef.current);
+      if (uri) {
+        try {
+          await FileSystem.deleteAsync(uri, { idempotent: true });
+        } catch (e) {
+          // Ignorer les erreurs de suppression
+        }
+      }
+      recordingRef.current = null;
+    }
+
+    // Activer le verrou
+    isCreatingRecordingRef.current = true;
+
+    try {
+      console.log('🎙️ Creating new recording...');
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      console.log('✅ Recording created successfully');
+      return recording;
+    } catch (err) {
+      console.error('❌ Error creating recording:', err);
+      return null;
+    } finally {
+      // Désactiver le verrou
+      isCreatingRecordingRef.current = false;
+    }
+  }, [safelyStopAndUnloadRecording]);
+
   const startListening = useCallback(async () => {
     try {
       console.log('🎤 Starting to listen...');
@@ -238,108 +311,6 @@ export function useMicrophone(): UseMicrophoneReturn {
       return '';
     }
   }, [transcribeAudio, safelyStopAndUnloadRecording]);
-
-  // Fonction pour transcrire un segment d'audio sans arrêter l'enregistrement
-  const transcribeCurrentSegment = useCallback(async (): Promise<string | null> => {
-    try {
-      if (!recordingRef.current) {
-        return null;
-      }
-
-      // Créer une copie temporaire de l'enregistrement actuel
-      const tempUri = recordingRef.current.getURI();
-      if (!tempUri) {
-        return null;
-      }
-
-      // Pour transcrire un segment, on doit d'abord arrêter temporairement
-      // Puis reprendre. Mais avec expo-av, on ne peut pas faire ça facilement.
-      // Solution: on va créer un nouvel enregistrement à chaque fois
-      // et fusionner les segments, ou mieux: on va attendre un peu puis transcrire
-      
-      // Pour l'instant, on va transcrire l'audio actuel
-      // Note: Cette approche nécessite d'arrêter l'enregistrement
-      // Une meilleure solution serait d'utiliser un buffer audio
-      
-      return null;
-    } catch (err) {
-      console.error('Error transcribing segment:', err);
-      return null;
-    }
-  }, []);
-
-  // Helper function to safely stop and unload a recording
-  const safelyStopAndUnloadRecording = useCallback(async (
-    recording: Audio.Recording
-  ): Promise<string | null> => {
-    try {
-      // Get URI before unloading (once unloaded, getURI() returns null)
-      const uri = recording.getURI();
-      
-      // Try to stop and unload
-      try {
-        await recording.stopAndUnloadAsync();
-        console.log('✅ Recording stopped and unloaded successfully');
-      } catch (stopError: any) {
-        // Check if error is because recording is already unloaded
-        const errorMessage = stopError?.message || String(stopError);
-        if (errorMessage.includes('already been unloaded') || 
-            errorMessage.includes('unloaded') ||
-            errorMessage.includes('not loaded')) {
-          console.log('⚠️ Recording already unloaded, skipping stopAndUnloadAsync');
-        } else {
-          // Re-throw if it's a different error
-          throw stopError;
-        }
-      }
-      
-      return uri;
-    } catch (err) {
-      console.error('❌ Error in safelyStopAndUnloadRecording:', err);
-      return null;
-    }
-  }, []);
-
-  // Fonction pour créer un nouvel enregistrement de manière sécurisée
-  const createRecordingSafely = useCallback(async (): Promise<Audio.Recording | null> => {
-    // Vérifier le verrou
-    if (isCreatingRecordingRef.current) {
-      console.log('⚠️ Already creating a recording, skipping...');
-      return null;
-    }
-
-    // Vérifier qu'il n'y a pas d'enregistrement en cours
-    if (recordingRef.current) {
-      console.log('⚠️ Recording already exists, cleaning up first...');
-      const uri = await safelyStopAndUnloadRecording(recordingRef.current);
-      if (uri) {
-        try {
-          await FileSystem.deleteAsync(uri, { idempotent: true });
-        } catch (e) {
-          // Ignorer les erreurs de suppression
-        }
-      }
-      recordingRef.current = null;
-    }
-
-    // Activer le verrou
-    isCreatingRecordingRef.current = true;
-
-    try {
-      console.log('🎙️ Creating new recording...');
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      console.log('✅ Recording created successfully');
-      return recording;
-    } catch (err) {
-      console.error('❌ Error creating recording:', err);
-      return null;
-    } finally {
-      // Désactiver le verrou
-      isCreatingRecordingRef.current = false;
-    }
-  }, []);
 
   // Fonction pour valider périodiquement pendant l'enregistrement
   const validatePeriodically = useCallback(async () => {
