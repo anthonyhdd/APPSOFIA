@@ -1,18 +1,19 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { useLanguage } from '../../context/LanguageContext';
 import { triggerHapticFeedback } from '../../utils/haptics';
+import { useProgress } from '../../hooks/useProgress';
 
 interface CallEndScreenProps {
   navigation: any;
@@ -21,6 +22,16 @@ interface CallEndScreenProps {
 export default function CallEndScreen({ navigation }: CallEndScreenProps) {
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
+  const { user } = useProgress();
+  const celebrationVideoRef = useRef<Video>(null);
+  const [celebrationVideoReady, setCelebrationVideoReady] = useState(false);
+
+  useEffect(() => {
+    // Auto-play celebration video when screen loads
+    if (celebrationVideoRef.current && celebrationVideoReady) {
+      celebrationVideoRef.current.playAsync();
+    }
+  }, [celebrationVideoReady]);
 
   const handleNext = () => {
     triggerHapticFeedback();
@@ -29,19 +40,62 @@ export default function CallEndScreen({ navigation }: CallEndScreenProps) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.gradient}>
-        {/* Overlay gradient from bottom */}
-        <LinearGradient
-          colors={['rgba(255, 107, 53, 0.6)', 'transparent']}
-          start={{ x: 0, y: 1 }}
-          end={{ x: 0, y: 0 }}
-          style={styles.bottomOverlay}
-          pointerEvents="none"
+      <StatusBar barStyle="light-content" />
+      
+      {/* Celebration Video Background */}
+      {celebrationVideoReady && (
+        <Video
+          ref={celebrationVideoRef}
+          source={require('../../assets/media/videos/celebrationfinal.mp4')}
+          style={styles.celebrationVideo}
+          resizeMode={ResizeMode.COVER}
+          shouldPlay={celebrationVideoReady}
+          isLooping
+          useNativeControls={false}
+          isMuted={false}
+          volume={1.0}
+          progressUpdateIntervalMillis={100}
+          onLoadStart={() => {
+            console.log('🎬 Celebration video load started');
+            setCelebrationVideoReady(false);
+          }}
+          onLoad={(status) => {
+            console.log('✅ Celebration video loaded:', status);
+            setCelebrationVideoReady(true);
+            celebrationVideoRef.current?.setIsMutedAsync(false);
+            celebrationVideoRef.current?.setVolumeAsync(1.0);
+            celebrationVideoRef.current?.playAsync();
+          }}
+          onError={(error) => {
+            console.error('❌ Celebration video error:', error);
+            setCelebrationVideoReady(false);
+          }}
+          onPlaybackStatusUpdate={(status) => {
+            if (status.isLoaded) {
+              if (!status.isPlaying && !status.isBuffering && celebrationVideoReady) {
+                celebrationVideoRef.current?.playAsync();
+              }
+              if (status.isMuted) {
+                celebrationVideoRef.current?.setIsMutedAsync(false);
+              }
+            }
+          }}
         />
+      )}
 
+      {/* Gradient Overlay */}
+      <LinearGradient
+        colors={['rgba(255, 107, 53, 0.6)', 'transparent', 'rgba(0, 0, 0, 0.4)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.gradientOverlay}
+        pointerEvents="none"
+      />
+
+      {/* Content */}
+      <View style={styles.content}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 120 }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 60 }]}>
           <View style={styles.titleContainer}>
             <View style={styles.iconContainer}>
               <Text style={styles.phoneIcon}>📞</Text>
@@ -65,15 +119,6 @@ export default function CallEndScreen({ navigation }: CallEndScreenProps) {
           <Text style={styles.subtitle}>{t('call.end.subtitle')}</Text>
         </View>
 
-        {/* Character Image */}
-        <View style={styles.imageContainer}>
-          <Image
-            source={require('../../assets/media/videos/call_succeed.png')}
-            style={styles.characterImage}
-            resizeMode="contain"
-          />
-        </View>
-
         {/* Rewards Cards */}
         <View style={styles.rewardsContainer}>
           {/* XP Card */}
@@ -83,7 +128,7 @@ export default function CallEndScreen({ navigation }: CallEndScreenProps) {
             </View>
             <View style={styles.rewardBody}>
               <Text style={styles.rewardIcon}>🧪</Text>
-              <Text style={styles.rewardValue}>0{t('call.end.xp')}</Text>
+              <Text style={styles.rewardValue}>0 {t('call.end.xp')}</Text>
             </View>
           </View>
 
@@ -120,25 +165,33 @@ export default function CallEndScreen({ navigation }: CallEndScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.backgroundDark,
   },
-  gradient: {
-    flex: 1,
-    backgroundColor: colors.background,
-    position: 'relative',
-  },
-  bottomOverlay: {
+  celebrationVideo: {
     position: 'absolute',
-    bottom: 0,
+    top: 0,
     left: 0,
     right: 0,
-    height: 500,
+    bottom: 0,
+    zIndex: 0,
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     zIndex: 1,
+  },
+  content: {
+    flex: 1,
+    zIndex: 2,
+    justifyContent: 'space-between',
   },
   header: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
     alignItems: 'center',
-    zIndex: 10,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -153,12 +206,7 @@ const styles = StyleSheet.create({
   },
   phoneIcon: {
     fontSize: 24,
-    color: colors.primary,
-  },
-  arrowIcon: {
-    fontSize: 20,
-    color: colors.primary,
-    marginLeft: spacing.xs,
+    color: colors.textWhite,
   },
   arrowIconOrange: {
     fontSize: 20,
@@ -175,25 +223,13 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: typography.fontSize.lg,
-    color: colors.text,
+    color: colors.textWhite,
     textAlign: 'center',
     fontFamily: typography.fontFamily.regular,
     marginTop: spacing.xs,
-  },
-  imageContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    position: 'relative',
-    marginVertical: spacing.md,
-    zIndex: 2,
-  },
-  characterImage: {
-    width: '100%',
-    height: '100%',
-    maxWidth: 350,
-    maxHeight: 500,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   rewardsContainer: {
     flexDirection: 'row',
@@ -202,7 +238,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.lg,
     gap: spacing.md,
-    zIndex: 3,
   },
   rewardCard: {
     flex: 1,
@@ -210,6 +245,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     overflow: 'hidden',
     minHeight: 100,
+    ...colors.shadows?.lg || {},
   },
   rewardHeader: {
     backgroundColor: colors.primary,
@@ -260,7 +296,6 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     borderRadius: borderRadius.lg,
     overflow: 'hidden',
-    zIndex: 3,
   },
   nextButtonGradient: {
     paddingVertical: spacing.lg,

@@ -308,9 +308,11 @@ export default function PaywallScreen({ navigation, route }: any) {
             triggerHapticFeedback();
             if (fromOnboarding) {
               // Si on vient de l'onboarding, naviguer vers la page de félicitations (first_session)
+              console.log('🎯 Paywall: Navigating back to Onboarding with targetStep: first_session');
               navigation.navigate('Onboarding', { targetStep: 'first_session' });
             } else {
               // TODO: Handle free trial start
+              navigation.navigate('Home');
             }
           }}
           activeOpacity={0.8}

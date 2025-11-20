@@ -242,9 +242,13 @@ export default function OnboardingScreen({ navigation, route }: any) {
   useEffect(() => {
     const targetStep = route?.params?.targetStep;
     if (targetStep) {
+      console.log('🎯 Navigating to step:', targetStep);
       goToStepByType(targetStep);
       // Nettoyer le paramètre pour éviter de revenir à cette étape à chaque focus
-      navigation.setParams({ targetStep: undefined });
+      // Utiliser un timeout pour s'assurer que la navigation se fait après le rendu
+      setTimeout(() => {
+        navigation.setParams({ targetStep: undefined });
+      }, 100);
     }
   }, [route?.params?.targetStep, goToStepByType, navigation]);
 
@@ -402,8 +406,16 @@ export default function OnboardingScreen({ navigation, route }: any) {
       }
     }
 
-    if (isComplete) {
-      // Marquer l'utilisateur comme inscrit
+    // Vérifier si on est à la dernière étape (first_session)
+    if (currentQuestion.step === 'first_session') {
+      // Marquer l'utilisateur comme inscrit et aller à Home
+      const { setStorageItem } = require('../../utils/storage');
+      setStorageItem('user_signed_up', 'true').catch((err: any) => {
+        console.error('Error saving sign up status:', err);
+      });
+      navigation.replace('Home');
+    } else if (isComplete) {
+      // Si on est à la dernière étape mais pas first_session, aller à Home aussi
       const { setStorageItem } = require('../../utils/storage');
       setStorageItem('user_signed_up', 'true').catch((err: any) => {
         console.error('Error saving sign up status:', err);
